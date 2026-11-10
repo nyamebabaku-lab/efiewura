@@ -5,6 +5,7 @@ import { useStore } from '../../data/store';
 import { useMe, useData } from '../../lib/session';
 import { Modal, Button, Field, Input, Select, toast, cx } from '../../components/ui';
 import PayModal from '../../components/PayModal';
+import { payOnline } from '../../lib/pay';
 import { balance } from '../../lib/billing';
 import { money, round2, sum, fmtDate } from '../../lib/format';
 import { InvStatus } from './bits';
@@ -28,19 +29,25 @@ export default function RecordPayment({ open, onClose, tenantId: initialTenant, 
   useEffect(() => setAmount(due || ''), [due]);
   const tenant = tenants.find((t) => t.id === tenantId);
 
-  const save = (m = method, extra = {}) => {
-    const amt = Number(extra.amount ?? amount);
-    if (!tenantId || !(amt > 0)) { toast.error('Choose a tenant and amount'); return null; }
-    const p = recordPayment({ ownerId: owner.id, tenantId, amount: amt, method: m, invoiceIds: picked, by: user.name, note, payer: extra.payer });
-    toast.success('Payment recorded', `${money(amt)} from ${tenant.name} · receipt sent by SMS`);
-    onDone?.(p);
-    return p;
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    const amt = Number(amount);
+    if (!tenantId || !(amt > 0)) return toast.error('Choose a tenant and amount');
+    setBusy(true);
+    try {
+      const p = await recordPayment({ ownerId: owner.id, tenantId, amount: amt, method, invoiceIds: picked, by: user.name, note });
+      toast.success('Payment recorded', `${money(amt)} from ${tenant.name} · receipt sent by SMS`);
+      onClose();
+      onDone?.(p);
+    } catch (e) { toast.error('Payment not saved', e.message); }
+    setBusy(false);
+    return null;
   };
 
   return (
     <>
       <Modal open={open && !momo} onClose={onClose} title="Record a payment" subtitle="Cash, bank or MoMo paid to you directly — or send a MoMo prompt to the tenant now" size="lg"
-        footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button variant="soft" icon={Smartphone} disabled={!tenantId || owner.status !== 'approved'} onClick={() => setMomo(true)}>Charge tenant’s MoMo</Button><Button onClick={() => save() && onClose()}>Save payment</Button></>}>
+        footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button variant="soft" icon={Smartphone} disabled={!tenantId || owner.status !== 'approved'} onClick={() => setMomo(true)}>Charge tenant’s MoMo</Button><Button disabled={busy} onClick={save}>Save payment</Button></>}>
         <div className="space-y-4">
           <Field label="Tenant">
             <Select value={tenantId} onChange={(e) => setTenantId(e.target.value)} placeholder="Choose tenant…" options={activeTenants.map((t) => {
@@ -86,7 +93,9 @@ export default function RecordPayment({ open, onClose, tenantId: initialTenant, 
         </div>
       </Modal>
       <PayModal open={momo} onClose={() => { setMomo(false); onClose(); }} title={`Charge ${tenant?.name || ''}`} subtitle="The tenant gets a MoMo prompt on their phone" amount={amount} max={undefined} phone={tenant?.phone || ''} payee={owner.company}
-        onPaid={({ method: m, payer, amount: a }) => save(m, { payer, amount: a })} />
+        provider={owner.provider}
+        pay={(p, u) => payOnline({ ownerId: owner.id, tenantId, invoiceIds: picked, by: user.name, ...p }, u)}
+        onDone={(r) => { toast.success('Payment received', `${tenant?.name} paid by MoMo — it goes to your wallet`); if (r.payment) onDone?.({ ...r.payment, ownerId: owner.id }); }} />
     </>
   );
 }

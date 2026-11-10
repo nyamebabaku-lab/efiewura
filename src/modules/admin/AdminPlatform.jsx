@@ -1,11 +1,14 @@
 import { useStore } from '../../data/store';
 import { PageHeader, Card, CardHeader, Field, Input, Button, toast, confirmDialog } from '../../components/ui';
-import { RotateCcw, FlaskConical } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { RotateCcw, FlaskConical, PlugZap, CheckCircle2, XCircle } from 'lucide-react';
+import { LIVE } from '../../config';
+import { providerStatus } from '../../lib/pay';
 
 export default function AdminPlatform() {
   const s = useStore();
   const p = s.platform;
-  const set = (patch) => useStore.setState((st) => ({ platform: { ...st.platform, ...patch } }));
+  const set = (patch) => s.setPlatform(patch);
   const setPlan = (id, patch) => set({ plans: p.plans.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
   return (
     <div className="space-y-6">
@@ -39,12 +42,33 @@ export default function AdminPlatform() {
           <p className="mt-1 text-xs text-slate-500">While on, a banner tells everyone payments are simulated. In the live app this switches between the payment provider’s test and live keys.</p>
           <Button className="mt-3" variant={p.testMode ? 'primary' : 'secondary'} onClick={() => { set({ testMode: !p.testMode }); toast.success(p.testMode ? 'Test mode off' : 'Test mode on'); }}>{p.testMode ? 'Turn test mode off' : 'Turn test mode on'}</Button>
         </Card>
-        <Card className="p-5">
+        <Connections />
+        {!LIVE && <Card className="p-5">
           <p className="font-semibold">Reset demo data</p>
           <p className="mt-1 text-xs text-slate-500">Restores all sample owners, tenants and payments in this browser.</p>
           <Button className="mt-3" variant="soft-red" icon={RotateCcw} onClick={async () => (await confirmDialog('Reset the demo?', 'All changes in this browser are lost.')) && s.resetDemo()}>Reset demo</Button>
-        </Card>
+        </Card>}
       </div>
     </div>
+  );
+}
+
+function Connections() {
+  const [st, setSt] = useState(null);
+  useEffect(() => { providerStatus().then(setSt); }, []);
+  const rows = [['paystack', 'Paystack (MoMo, cards, payouts)', 'PAYSTACK_SECRET_KEY'], ['hubtel', 'Hubtel collections', 'HUBTEL_API_ID, HUBTEL_API_KEY, HUBTEL_POS_SALES_ID'], ['hubtelPayouts', 'Hubtel payouts', 'HUBTEL_PREPAID_ID'], ['sms', 'mNotify SMS', 'MNOTIFY_API_KEY, MNOTIFY_SENDER_ID']];
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader title="Connections" subtitle="Keys live in Supabase → Edge Functions → Secrets (never in the app)" icon={PlugZap} />
+      <div className="grid gap-3 p-5 sm:grid-cols-2">
+        {rows.map(([k, l, keys]) => (
+          <div key={k} className="flex items-start gap-3 rounded-xl border border-ivory-200 p-3 dark:border-white/10">
+            {st?.[k] ? <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-500" /> : <XCircle className="mt-0.5 h-5 w-5 text-slate-300" />}
+            <div><p className="text-sm font-semibold">{l}</p><p className="font-mono text-[11px] text-slate-500">{keys}</p></div>
+          </div>
+        ))}
+      </div>
+      <p className="px-5 pb-5 text-xs text-slate-500">Paystack webhook URL: <span className="font-mono">https://jepkzvunetajsgscoelv.supabase.co/functions/v1/efiewura-webhook?p=paystack</span>. Hubtel callbacks are set automatically on each payment.</p>
+    </Card>
   );
 }

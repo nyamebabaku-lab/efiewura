@@ -54,7 +54,7 @@ export function buildSeed() {
   const owners = [
     {
       id: 'o1', company: 'Adom Properties Ltd', tagline: 'Homes you are proud of', contactName: 'Ama Owusu-Ansah', phone: '0244123456', email: 'ama@adomproperties.com.gh', address: 'No. 12 Lagos Avenue, East Legon, Accra',
-      status: 'approved', plan: 'growth', planRenews: day(18), setupDone: true, code: 'ADOM24', createdAt: day(-720),
+      status: 'approved', plan: 'growth', planRenews: day(18), setupDone: true, code: 'ADOM24', provider: 'paystack', createdAt: day(-720),
       logo: monogramLogo('AP', '#1e40af', '#e2b232'), theme: { ...DEFAULT_THEME, brand: '#1e40af', accent: '#e2b232', font: 'Fraunces', sidebar: 'dark' },
       kyc: { ghanaCard: 'GHA-712345678-3', businessReg: 'CS112233445', tin: 'C0012345678' },
       payoutAccounts: [
@@ -65,13 +65,13 @@ export function buildSeed() {
     },
     {
       id: 'o2', company: '', contactName: 'Kwesi Mensah', phone: '0201234567', email: 'kwesi.mensah@gmail.com', address: 'Dansoman, Accra',
-      status: 'pending', plan: 'starter', setupDone: false, code: 'KWME51', createdAt: day(-1), logo: '', theme: { ...DEFAULT_THEME },
+      status: 'pending', plan: 'starter', setupDone: false, code: 'KWME51', provider: 'paystack', createdAt: day(-1), logo: '', theme: { ...DEFAULT_THEME },
       kyc: { ghanaCard: 'GHA-723456789-1', businessReg: '', tin: '' }, payoutAccounts: [],
       settings: { graceDays: 5, lateFeePct: 0, autoReminders: true, reminderDays: 3, smsSender: '', templates: SMS_TEMPLATES },
     },
     {
       id: 'o3', company: 'Serwaa Estates', tagline: 'Kumasi living, done right', contactName: 'Serwaa Akoto', phone: '0277654321', email: 'info@serwaaestates.com', address: 'Ahodwo Roundabout, Kumasi',
-      status: 'approved', plan: 'starter', setupDone: true, code: 'SERW77', createdAt: day(-300),
+      status: 'approved', plan: 'starter', setupDone: true, code: 'SERW77', provider: 'hubtel', createdAt: day(-300),
       logo: monogramLogo('SE', '#881337', '#d4a017'), theme: { ...DEFAULT_THEME, brand: '#881337', accent: '#d4a017', font: 'Sora', sidebar: 'brand' },
       kyc: { ghanaCard: 'GHA-734567890-5', businessReg: 'BN998877', tin: '' },
       payoutAccounts: [{ id: 'pa3', kind: 'momo', network: 'telecel', number: '0207654321', name: 'Serwaa Akoto', default: true }],

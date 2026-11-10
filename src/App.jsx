@@ -8,6 +8,13 @@ import { Toaster, Button } from './components/ui';
 import AppShell from './components/layout/AppShell';
 import Landing from './modules/public/Landing';
 import SetupWizard from './modules/shared/SetupWizard';
+import { LIVE } from './config';
+import { useLive, startLive } from './data/live';
+import { FinishSetup } from './modules/public/LiveAuth';
+import { EfieMark } from './components/layout/Logo';
+
+const PaidReturn = lazy(() => import('./modules/shared/PaidReturn'));
+if (LIVE) startLive();
 
 const Dashboard = lazy(() => import('./modules/owner/Dashboard'));
 const Properties = lazy(() => import('./modules/owner/Properties'));
@@ -61,6 +68,7 @@ function RoleRoutes({ role }) {
         <Route path="/requests" element={<TenantRequests />} />
         <Route path="/lease" element={<TenantLease />} />
         <Route path="/notices" element={<TenantNotices />} />
+        <Route path="/paid" element={<PaidReturn />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -88,6 +96,7 @@ function RoleRoutes({ role }) {
       <Route path="/expenses" element={<Expenses />} />
       <Route path="/messages" element={<Messages />} />
       <Route path="/reports" element={<Reports />} />
+      <Route path="/paid" element={<PaidReturn />} />
       {role === 'owner' && <Route path="/wallet" element={<WalletPage />} />}
       {role === 'owner' && <Route path="/staff" element={<Staff />} />}
       {role === 'owner' && <Route path="/settings" element={<Settings />} />}
@@ -98,13 +107,16 @@ function RoleRoutes({ role }) {
 
 export default function App() {
   const { user, owner } = useMe();
+  const phase = useLive((s) => s.phase);
   const runBilling = useStore((s) => s.runBilling);
   const theme = user && user.role !== 'admin' && owner ? owner.theme : DEFAULT_THEME;
   useEffect(() => applyTheme(theme), [theme]);
-  useEffect(() => { if (user) runBilling(); }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (user && !LIVE) runBilling(); }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   let body;
-  if (!user) body = <Landing />;
+  if (LIVE && phase === 'loading') body = <div className="flex min-h-screen flex-col items-center justify-center gap-4"><EfieMark className="h-14 w-14 animate-pulse-soft" /><Loader2 className="h-5 w-5 animate-spin text-brand-600" /></div>;
+  else if (LIVE && phase === 'noProfile') body = <FinishSetup />;
+  else if (!user) body = <Landing />;
   else if (user.role === 'owner' && !owner.setupDone) body = <SetupWizard />;
   else if (owner?.status === 'suspended') body = <Suspended owner={owner} />;
   else

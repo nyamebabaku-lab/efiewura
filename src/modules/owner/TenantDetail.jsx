@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Phone, Mail, MessageSquare, Plus, FileSignature, Pencil, Receipt as ReceiptIcon, FilePlus2 } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MessageSquare, Plus, FileSignature, Pencil, Receipt as ReceiptIcon, FilePlus2, Smartphone } from 'lucide-react';
+import { SITE } from '../../config';
 import { useStore, fillTemplate } from '../../data/store';
 import { useMe, useData, useScoped, can } from '../../lib/session';
 import { Button, Card, CardHeader, Avatar, KeyValue, DataTable, Tabs, Badge, FormModal, Modal, Textarea, toast, EmptyState } from '../../components/ui';
@@ -43,6 +44,7 @@ export default function TenantDetail() {
   const [doc, setDoc] = useState(null);
   const [sms, setSms] = useState(null);
   const t = d.T[id];
+  const appUser = s.users.find((u) => u.tenantId === id);
   if (!t) return <EmptyState title="Tenant not found" action={<Button onClick={() => nav('/tenants')}>Back</Button>} />;
   const leases = d.leases.filter((l) => l.tenantId === id).sort((a, b) => b.start.localeCompare(a.start));
   const lease = leases.find((l) => l.status === 'active');
@@ -68,7 +70,11 @@ export default function TenantDetail() {
               {t.email && <a href={`mailto:${t.email}`}><Button size="sm" variant="secondary" icon={Mail}>Email</Button></a>}
             </div>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-2">
+          <div className="mt-4 flex items-center justify-between gap-2 rounded-xl bg-ivory-100 p-3 text-xs dark:bg-white/5">
+            <span className="flex items-center gap-1.5 font-semibold"><Smartphone className="h-4 w-4 text-brand-600" /> {appUser ? 'Uses the tenant app' : 'Not on the app yet'}</span>
+            {!appUser && lease && <Button size="sm" variant="soft" onClick={() => setSms(`Hello ${t.name.split(' ')[0]}, pay rent by MoMo, get receipts and report repairs in the ${owner.company} app: ${SITE} → Create account → Tenant. Use company code ${owner.code} and this phone number (${t.phone}).`)}>Invite</Button>}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
             <Mini label="Owes now" value={money(owed)} tone={owed > 0 ? 'text-red-600' : 'text-emerald-600'} />
             <Mini label="Coming up" value={money(upcoming)} />
           </div>

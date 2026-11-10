@@ -1,5 +1,5 @@
-// The whole demo runs in the browser: one Zustand store persisted to localStorage.
-// Phase 2 swaps these actions for Supabase calls.
+// One Zustand store for both apps. The demo keeps everything in the browser; the live app starts empty,
+// loads from Supabase (data/live.js) and replaces the actions that must run on the server.
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { addMonths, format, parseISO, differenceInCalendarDays } from 'date-fns';
@@ -7,17 +7,20 @@ import { buildSeed } from './seed';
 import { leaseInvoices, allocate, ONLINE, balance, wallet, payoutFee, leaseEnd } from '../lib/billing';
 import { uid, round2, nowISO, today } from '../lib/format';
 import { DEFAULT_THEME } from '../lib/theme';
+import { LIVE } from '../config';
+import { PLATFORM } from './seed';
 
 const COLS = ['owners', 'users', 'properties', 'units', 'tenants', 'leases', 'invoices', 'payments', 'withdrawals', 'subscriptions', 'maintenance', 'expenses', 'notices', 'sms', 'alerts'];
 const code6 = () => Array.from({ length: 6 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 31)]).join('');
 const ref = (p = 'EW') => `${p}${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`;
 
-const fill = (tpl, vars) => tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+const fill = (tpl, vars) => (tpl || '').replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+export const emptyState = () => ({ platform: PLATFORM, ...Object.fromEntries([...COLS, 'invites'].map((c) => [c, []])) });
 
 export const useStore = create(
   persist(
     (set, get) => ({
-      ...buildSeed(),
+      ...(LIVE ? emptyState() : { ...buildSeed(), invites: [] }),
       session: null, // { userId }
       lastBilling: null,
 
@@ -27,7 +30,7 @@ export const useStore = create(
         set({ session: { userId } });
       },
       logout: () => set({ session: null }),
-      resetDemo: () => set({ ...buildSeed(), session: null, lastBilling: null }),
+      resetDemo: () => set({ ...buildSeed(), invites: [], session: null, lastBilling: null }),
 
       // ---------- generic ----------
       add: (col, rec) => {
@@ -57,27 +60,30 @@ export const useStore = create(
         const s = get();
         let tenantId = f.tenantId;
         if (!tenantId) tenantId = s.add('tenants', { ownerId: f.ownerId, ...f.newTenant }).id;
-        const lease = { id: uid('lea'), ownerId: f.ownerId, unitId: f.unitId, tenantId, start: f.start, months: Number(f.months), cycle: f.cycle, rent: Number(f.rent), deposit: Number(f.deposit) || 0, status: 'active', no: `TA-${format(new Date(), 'yy')}-${String(s.leases.length + 1).padStart(4, '0')}`, signedOwner: f.ownerSign ? { name: f.ownerSign, at: nowISO() } : null, signedTenant: null, createdAt: nowISO(), notes: f.notes || '' };
-        set((st) => ({ leases: [...st.leases, lease], units: st.units.map((u) => (u.id === f.unitId ? { ...u, status: 'occupied' } : u)) }));
+        const unit = s.units.find((u) => u.id === f.unitId);
+        const lease = s.add('leases', { ownerId: f.ownerId, unitId: f.unitId, propertyId: unit?.propertyId, tenantId, start: f.start, months: Number(f.months), cycle: f.cycle, rent: Number(f.rent), deposit: Number(f.deposit) || 0, status: 'active', no: `TA-${format(new Date(), 'yy')}-${String(s.leases.length + 1).padStart(4, '0')}`, signedOwner: f.ownerSign ? { name: f.ownerSign, at: nowISO() } : null, signedTenant: null, notes: f.notes || '' });
+        s.update('units', f.unitId, { status: 'occupied' });
+        if (s.tenants.find((t) => t.id === tenantId)?.former) s.update('tenants', tenantId, { former: false });
         get().runBilling();
         return lease;
       },
       endLease: (leaseId, { date = today(), refund = '' } = {}) => {
-        const l = get().leases.find((x) => x.id === leaseId);
-        set((s) => ({
-          leases: s.leases.map((x) => (x.id === leaseId ? { ...x, status: 'ended', endedOn: date, refund } : x)),
-          units: s.units.map((u) => (u.id === l.unitId ? { ...u, status: 'vacant' } : u)),
-          tenants: s.tenants.map((t) => (t.id === l.tenantId && !s.leases.some((o) => o.id !== leaseId && o.tenantId === t.id && o.status === 'active') ? { ...t, former: true } : t)),
-          // Drop unpaid future invoices after the end date.
-          invoices: s.invoices.map((i) => (i.leaseId === leaseId && i.due > date && !i.paid ? { ...i, void: true } : i)),
-        }));
+        const s = get();
+        const l = s.leases.find((x) => x.id === leaseId);
+        s.update('leases', leaseId, { status: 'ended', endedOn: date, refund });
+        s.update('units', l.unitId, { status: 'vacant' });
+        if (!s.leases.some((o) => o.id !== leaseId && o.tenantId === l.tenantId && o.status === 'active')) s.update('tenants', l.tenantId, { former: true });
+        // Drop unpaid bills due after the move-out date.
+        s.invoices.filter((i) => i.leaseId === leaseId && i.due > date && !i.paid).forEach((i) => s.update('invoices', i.id, { void: true }));
       },
       renewLease: (leaseId, { months, rent, cycle }) => {
-        const l = get().leases.find((x) => x.id === leaseId);
+        const s = get();
+        const l = s.leases.find((x) => x.id === leaseId);
         const start = format(addMonths(parseISO(l.start), l.months), 'yyyy-MM-dd');
-        const n = { ...l, id: uid('lea'), start, months: Number(months), rent: Number(rent), cycle, deposit: 0, status: 'active', endedOn: undefined, no: `${l.no}-R`, signedTenant: null, signedOwner: null, createdAt: nowISO(), renewedFrom: l.id };
+        const { id: _old, ...rest } = l; // eslint-disable-line no-unused-vars
+        const n = s.add('leases', { ...rest, start, months: Number(months), rent: Number(rent), cycle, deposit: 0, status: 'active', endedOn: null, renewedBy: null, no: `${l.no}-R`, signedTenant: null, signedOwner: null, renewedFrom: l.id });
         // The old tenancy keeps running (and billing) until its end date; runBilling closes it then.
-        set((s) => ({ leases: [...s.leases.map((x) => (x.id === leaseId ? { ...x, renewedBy: n.id } : x)), n] }));
+        s.update('leases', leaseId, { renewedBy: n.id });
         get().runBilling();
         return n;
       },
@@ -173,6 +179,20 @@ export const useStore = create(
         if (plan.price > 0) get().add('subscriptions', { ownerId, plan: planId, amount: plan.price, at: nowISO(), method: fromWallet ? 'wallet' : method, fromWallet: !!fromWallet });
       },
 
+      reportRepair: (f) => {
+        const s = get();
+        const u = s.units.find((x) => x.id === f.unitId);
+        const t = s.tenants.find((x) => x.id === f.tenantId);
+        const r = s.add('maintenance', { ...f, propertyId: u?.propertyId, status: 'open', at: nowISO(), updates: [], assignee: '' });
+        s.notify(f.ownerId, { title: `New repair request: ${f.title}`, text: `${t?.name} · ${u?.label}`, kind: 'maintenance' });
+        return r;
+      },
+      setOwnerStatus: (ownerId, status) => {
+        get().update('owners', ownerId, { status });
+        get().notify(ownerId, { title: status === 'approved' ? 'Your account is verified 🎉' : status === 'suspended' ? 'Your account was suspended' : 'Account updated', text: status === 'approved' ? 'Online rent and withdrawals are now switched on.' : '', kind: 'account' });
+      },
+      setPlatform: (patch) => set((s) => ({ platform: { ...s.platform, ...patch } })),
+
       // ---------- messages ----------
       sendSms: (ownerId, recipients, text, kind = 'custom') => {
         const at = nowISO();
@@ -184,9 +204,10 @@ export const useStore = create(
       readAlerts: (ownerId) => set((s) => ({ alerts: s.alerts.map((a) => (a.ownerId === ownerId ? { ...a, read: true } : a)) })),
     }),
     {
-      name: 'efiewura-pro',
+      name: LIVE ? 'efiewura-live' : 'efiewura-pro',
       version: 1,
-      partialize: (s) => Object.fromEntries([...COLS, 'platform', 'session', 'lastBilling'].map((k) => [k, s[k]])),
+      // The live app never caches account data in the browser; the server is the source of truth.
+      partialize: (s) => (LIVE ? {} : Object.fromEntries([...COLS, 'invites', 'platform', 'session', 'lastBilling'].map((k) => [k, s[k]]))),
     },
   ),
 );

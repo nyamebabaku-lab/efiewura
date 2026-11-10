@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Camera, Wrench } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { Card, PageHeader, Button, Modal, Field, Input, Select, Textarea, toast, EmptyState, Badge, cx } from '../../components/ui';
-import { fmtDate, fmtDateTime, nowISO } from '../../lib/format';
+import { fmtDate, fmtDateTime } from '../../lib/format';
 import { Status } from '../shared/bits';
 import { readImage } from '../shared/BrandEditor';
 import { CATEGORIES } from '../owner/Maintenance';
@@ -12,16 +12,15 @@ const STEPS = ['open', 'assigned', 'in progress', 'done'];
 
 export default function TenantRequests() {
   const t = useTenant();
-  const add = useStore((s) => s.add);
-  const notify = useStore((s) => s.notify);
+  const reportRepair = useStore((s) => s.reportRepair);
   const [form, setForm] = useState(null);
   const [view, setView] = useState(null);
   const submit = () => {
     if (!form.title) return toast.error('Tell us what is wrong');
-    add('maintenance', { ...form, ownerId: t.owner.id, unitId: t.unit.id, propertyId: t.property.id, tenantId: t.tenant.id, status: 'open', at: nowISO(), updates: [] });
-    notify(t.owner.id, { title: `New repair request: ${form.title}`, text: `${t.tenant.name} · ${t.unit.label}, ${t.property.name}`, kind: 'maintenance' });
-    toast.success('Request sent', `${t.owner.company} has been notified`);
-    return setForm(null);
+    Promise.resolve(reportRepair({ ...form, ownerId: t.owner.id, unitId: t.unit.id, tenantId: t.tenant.id }))
+      .then(() => { toast.success('Request sent', `${t.owner.company} has been notified`); setForm(null); })
+      .catch((e) => toast.error('Not sent', e.message));
+    return null;
   };
   return (
     <div className="space-y-5">

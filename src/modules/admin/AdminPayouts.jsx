@@ -32,11 +32,11 @@ export default function AdminPayouts() {
           { key: 'a', label: '', nosort: true, render: (w) => w.status === 'pending' && (
             <div className="flex justify-end gap-1">
               <Button size="sm" variant="ghost" icon={XCircle} onClick={() => setReject({ ...w, reason: '' })}>Decline</Button>
-              <Button size="sm" icon={CheckCircle2} onClick={() => { s.decideWithdrawal(w.id, true); toast.success('Payout approved', `${money(w.amount - w.fee)} sent to ${w.dest}`); }}>Approve</Button>
+              <Button size="sm" icon={CheckCircle2} onClick={async () => { try { await s.decideWithdrawal(w.id, true); toast.success('Payout approved', `${money(w.amount - w.fee)} sent to ${w.dest}`); } catch (e) { toast.error('Not approved', e.message); } }}>Approve</Button>
             </div>
           ) },
         ]} />
-      <Modal open={!!reject} onClose={() => setReject(null)} title="Decline payout" size="sm" footer={<Button variant="danger" onClick={() => { s.decideWithdrawal(reject.id, false, reject.reason || 'Declined after review'); setReject(null); toast.success('Payout declined', 'The money stays in the owner’s wallet'); }}>Decline</Button>}>
+      <Modal open={!!reject} onClose={() => setReject(null)} title="Decline payout" size="sm" footer={<Button variant="danger" onClick={async () => { try { await s.decideWithdrawal(reject.id, false, reject.reason || 'Declined after review'); setReject(null); toast.success('Payout declined', 'The money stays in the owner’s wallet'); } catch (e) { toast.error('Not declined', e.message); } }}>Decline</Button>}>
         <Field label="Reason (the owner sees this)"><Input value={reject?.reason || ''} onChange={(e) => setReject({ ...reject, reason: e.target.value })} placeholder="e.g. Account name does not match Ghana Card" /></Field>
       </Modal>
     </div>

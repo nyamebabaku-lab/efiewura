@@ -15,8 +15,7 @@ export default function AdminOwners() {
   const list = rows.filter((o) => filter === 'all' || o.status === filter);
   const setStatus = async (o, status) => {
     if (status === 'suspended' && !(await confirmDialog('Suspend owner?', `${o.company || o.contactName}, their staff and tenants lose access until you restore it.`))) return;
-    s.update('owners', o.id, { status, approvedAt: status === 'approved' ? new Date().toISOString() : o.approvedAt });
-    s.notify(o.id, { title: status === 'approved' ? 'Your account is verified 🎉' : status === 'suspended' ? 'Your account was suspended' : 'Account restored', text: status === 'approved' ? 'Online rent and withdrawals are now switched on.' : '', kind: 'account' });
+    try { await s.setOwnerStatus(o.id, status); } catch (e) { toast.error('Not changed', e.message); return; }
     toast.success(status === 'approved' ? 'Owner approved' : status === 'suspended' ? 'Owner suspended' : 'Owner restored');
     setView(null);
   };

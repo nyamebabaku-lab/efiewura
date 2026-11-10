@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CheckSquare, Square, CreditCard, ShieldCheck } from 'lucide-react';
-import { useStore } from '../../data/store';
+import { payOnline } from '../../lib/pay';
 import { Card, Button, PageHeader, cx, toast, EmptyState } from '../../components/ui';
 import PayModal from '../../components/PayModal';
 import PayLogo from '../../components/PayLogo';
@@ -12,7 +12,6 @@ import { useTenant } from './useTenant';
 
 export default function TenantPay() {
   const t = useTenant();
-  const recordPayment = useStore((s) => s.recordPayment);
   const [picked, setPicked] = useState(() => t.open.filter((i) => i.due <= new Date(Date.now() + 15 * 864e5).toISOString().slice(0, 10)).map((i) => i.id));
   const [open, setOpen] = useState(false);
   const [receipt, setReceipt] = useState(null);
@@ -48,11 +47,11 @@ export default function TenantPay() {
 
       <PayModal open={open} onClose={() => setOpen(false)} title={`Pay ${t.owner.company}`} subtitle={`${t.unit?.label} · ${t.property?.name}`} amount={total || t.lease?.rent} phone={t.tenant.phone} payee={t.owner.company}
         presets={[t.dueNow > 0 && { label: 'Due now', value: t.dueNow }, t.lease && { label: '1 month', value: t.lease.rent }, t.totalOpen > 0 && { label: 'Everything', value: t.totalOpen }].filter(Boolean)}
-        onPaid={({ method, payer, amount }) => {
-          const p = recordPayment({ ownerId: t.owner.id, tenantId: t.tenant.id, amount, method, invoiceIds: picked.length ? picked : undefined, by: 'tenant', payer });
-          setTimeout(() => setReceipt(p), 1200);
-          toast.success('Payment successful', `Receipt ${p.ref}`);
-          return p;
+        provider={t.owner.provider}
+        pay={(p, u) => payOnline({ ownerId: t.owner.id, tenantId: t.tenant.id, invoiceIds: picked.length ? picked : undefined, by: 'tenant', ...p }, u)}
+        onDone={(r) => {
+          toast.success('Payment successful', r.payment?.ref ? `Receipt ${r.payment.ref}` : '');
+          if (r.payment) setTimeout(() => setReceipt({ ...r.payment, ownerId: r.payment.ownerId || t.owner.id }), 1200);
         }} />
       <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
     </div>

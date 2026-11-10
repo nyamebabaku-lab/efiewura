@@ -5,6 +5,8 @@ import { EfieLogo } from '../../components/layout/Logo';
 import { Button, cx } from '../../components/ui';
 import PayLogo from '../../components/PayLogo';
 import Register from './Register';
+import { AuthModal } from './LiveAuth';
+import { LIVE, DEMO_SITE } from '../../config';
 import { useInstall } from '../../lib/install';
 
 const DEMOS = [
@@ -29,6 +31,8 @@ const FEATURES = [
 export default function Landing() {
   const login = useStore((s) => s.login);
   const [reg, setReg] = useState(false);
+  const [auth, setAuth] = useState(null);
+  const openReg = () => (LIVE ? setAuth('signup') : setReg(true));
   const install = useInstall();
   return (
     <div className="min-h-screen bg-ivory-100 dark:bg-navy-950">
@@ -40,7 +44,8 @@ export default function Landing() {
             <EfieLogo light />
             <div className="flex items-center gap-2">
               {install.canInstall && <Button variant="ghost" size="sm" icon={Download} className="!text-white hover:!bg-white/10" onClick={install.prompt}>Install app</Button>}
-              <Button size="sm" className="!bg-[#e2b232] !text-[#072e25] hover:!bg-[#ecc552]" onClick={() => setReg(true)}>Register</Button>
+              {LIVE && <Button size="sm" variant="ghost" className="!text-white hover:!bg-white/10" onClick={() => setAuth('signin')}>Sign in</Button>}
+              <Button size="sm" className="!bg-[#e2b232] !text-[#072e25] hover:!bg-[#ecc552]" onClick={openReg}>{LIVE ? 'Create account' : 'Register'}</Button>
             </div>
           </div>
           <div className="mt-14 grid items-center gap-12 lg:grid-cols-[1.1fr_.9fr]">
@@ -53,8 +58,12 @@ export default function Landing() {
                 <b className="text-white">Efie Wura</b> means “house owner”. Manage your properties and tenants, take rent by MoMo or card, and withdraw to your MoMo or bank — under your own brand, on any phone or computer.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button size="lg" className="!bg-[#e2b232] !text-[#072e25] hover:!bg-[#ecc552]" icon={ArrowRight} onClick={() => document.getElementById('demo').scrollIntoView({ behavior: 'smooth' })}>Try the live demo</Button>
-                <Button size="lg" variant="ghost" className="!text-white ring-1 ring-white/25 hover:!bg-white/10" onClick={() => setReg(true)}>Register your business</Button>
+                {LIVE ? (
+                  <Button size="lg" className="!bg-[#e2b232] !text-[#072e25] hover:!bg-[#ecc552]" icon={ArrowRight} onClick={() => setAuth('signin')}>Sign in</Button>
+                ) : (
+                  <Button size="lg" className="!bg-[#e2b232] !text-[#072e25] hover:!bg-[#ecc552]" icon={ArrowRight} onClick={() => document.getElementById('demo').scrollIntoView({ behavior: 'smooth' })}>Try the live demo</Button>
+                )}
+                <Button size="lg" variant="ghost" className="!text-white ring-1 ring-white/25 hover:!bg-white/10" onClick={openReg}>Register your business</Button>
               </div>
               <div className="mt-8 flex flex-wrap items-center gap-2">
                 {['mtn', 'telecel', 'at', 'card'].map((m) => <PayLogo key={m} method={m} className="h-8 w-12" />)}
@@ -67,6 +76,23 @@ export default function Landing() {
         <div className="kente h-1.5" style={{ '--accent-400': '226 178 50', '--brand-700': '11 74 58' }} />
       </section>
 
+      {LIVE ? (
+      <section className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
+        <p className="text-xs font-bold uppercase tracking-[.2em] text-[#a87b16]">Get started</p>
+        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#072e25] dark:text-white">One app for everyone</h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {[[Building2, 'Property owners', 'Register your company, add properties and units, move tenants in and collect rent online.', 'Register your business'], [KeyRound, 'Tenants', 'Your landlord gives you a 6-letter company code. Sign up with the phone number they saved for you.', 'Join as a tenant'], [UserCog, 'Managers & caretakers', 'The owner invites you by SMS. Sign up with the company code and your phone number.', 'Join as staff']].map(([Icon, t, d, cta]) => (
+            <div key={t} className="card p-6">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0f604a] text-white"><Icon className="h-6 w-6" /></div>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">{t}</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{d}</p>
+              <button type="button" onClick={() => setAuth('signup')} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#0f604a] dark:text-emerald-300">{cta} <ArrowRight className="h-4 w-4" /></button>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-sm text-slate-500">Just looking? <a href={DEMO_SITE} className="font-semibold text-[#0f604a] underline dark:text-emerald-300">Try the demo with sample data</a>.</p>
+      </section>
+      ) : (
       <section id="demo" className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
         <p className="text-xs font-bold uppercase tracking-[.2em] text-[#a87b16]">One-click demo</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#072e25] dark:text-white">Step inside as…</h2>
@@ -81,13 +107,14 @@ export default function Landing() {
               <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#0f604a] dark:text-emerald-300">Enter <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
             </button>
           ))}
-          <button type="button" onClick={() => setReg(true)} className="card flex flex-col items-center justify-center border-2 border-dashed border-ivory-300 p-5 text-center transition hover:border-[#0f604a]">
+          <button type="button" onClick={openReg} className="card flex flex-col items-center justify-center border-2 border-dashed border-ivory-300 p-5 text-center transition hover:border-[#0f604a]">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-ivory-200 text-[#0f604a] dark:bg-white/10"><Building2 className="h-6 w-6" /></div>
             <p className="font-bold text-slate-900 dark:text-white">Register as a new owner</p>
             <p className="mt-1 text-sm text-slate-500">Create your company and set up your brand</p>
           </button>
         </div>
       </section>
+      )}
 
       <section className="border-y border-ivory-200 bg-white py-14 dark:border-white/5 dark:bg-navy-900">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
@@ -112,9 +139,10 @@ export default function Landing() {
 
       <footer className="bg-[#072e25] py-8 text-center text-xs text-white/60">
         <div className="mx-auto mb-3 flex justify-center"><EfieLogo light /></div>
-        <p className="flex items-center justify-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Demo version · data stays in this browser · © {new Date().getFullYear()} Efie Wura Pro</p>
+        <p className="flex items-center justify-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> {LIVE ? 'Secure payments by Paystack & Hubtel' : 'Demo version · data stays in this browser'} · © {new Date().getFullYear()} Efie Wura Pro</p>
       </footer>
       <Register open={reg} onClose={() => setReg(false)} />
+      {LIVE && <AuthModal open={!!auth} start={auth || 'signin'} onClose={() => setAuth(null)} />}
     </div>
   );
 }

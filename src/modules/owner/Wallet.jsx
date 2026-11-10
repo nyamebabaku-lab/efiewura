@@ -8,6 +8,8 @@ import PayLogo from '../../components/PayLogo';
 import { wallet, payoutFee } from '../../lib/billing';
 import { money, fmtDateTime, round2, sum } from '../../lib/format';
 import { Status, Method } from '../shared/bits';
+import { LIVE } from '../../config';
+import { confirmPassword } from '../../data/live';
 
 const BANKS = ['GCB Bank', 'Ecobank Ghana', 'Stanbic Bank', 'Absa Bank Ghana', 'Fidelity Bank', 'CalBank', 'Zenith Bank', 'Access Bank', 'Republic Bank', 'Societe Generale', 'ADB', 'NIB', 'Prudential Bank', 'UBA Ghana', 'First Atlantic Bank', 'Consolidated Bank Ghana'];
 const accountFields = [
@@ -105,9 +107,9 @@ export default function WalletPage() {
         ]} />
       )}
 
-      <WithdrawModal open={wd} onClose={() => setWd(false)} owner={owner} balance={w.balance} onDone={(v) => {
+      <WithdrawModal open={wd} onClose={() => setWd(false)} owner={owner} balance={w.balance} onDone={async (v) => {
         try {
-          const r = s.requestWithdrawal({ ownerId: owner.id, amount: v.amount, accountId: v.accountId, by: user.name });
+          const r = await s.requestWithdrawal({ ownerId: owner.id, amount: v.amount, accountId: v.accountId, by: user.name });
           toast.success(r.needsApproval ? 'Withdrawal sent for review' : 'Withdrawal on its way', r.needsApproval ? `Amounts over ${money(s.platform.autoLimit)} are checked by Efie Wura first.` : `${money(r.amount - r.fee)} to ${r.dest}`);
           setWd(false);
         } catch (e) { toast.error('Withdrawal not sent', e.message); }
@@ -135,11 +137,14 @@ function WithdrawModal({ open, onClose, owner, balance, onDone, onAddAccount }) 
     if (amt < platform.minWithdraw) return toast.error(`Minimum withdrawal is ${money(platform.minWithdraw)}`);
     if (amt > balance) return toast.error('Not enough balance', `You can withdraw up to ${money(balance)}`);
     setStep('otp');
-    return toast.info('Code sent', `Demo code: 123456 (sent to ${owner.phone})`);
+    return LIVE ? null : toast.info('Code sent', `Demo code: 123456 (sent to ${owner.phone})`);
   };
   return (
     <Modal open={open} onClose={onClose} title="Withdraw money" subtitle={`Available: ${money(balance)}`} size="md"
-      footer={step === 'form' ? <><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={next}>Continue</Button></> : <><Button variant="secondary" onClick={() => setStep('form')}>Back</Button><Button icon={CheckCircle2} disabled={otp.length !== 6} onClick={() => (otp === '123456' ? onDone({ amount: amt, accountId }) : toast.error('Wrong code', 'Use 123456 in the demo'))}>Confirm withdrawal</Button></>}>
+      footer={step === 'form' ? <><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={next}>Continue</Button></> : <><Button variant="secondary" onClick={() => setStep('form')}>Back</Button><Button icon={CheckCircle2} disabled={LIVE ? otp.length < 6 : otp.length !== 6} onClick={async () => {
+        if (LIVE) return (await confirmPassword(otp)) ? onDone({ amount: amt, accountId }) : toast.error('Wrong password');
+        return otp === '123456' ? onDone({ amount: amt, accountId }) : toast.error('Wrong code', 'Use 123456 in the demo');
+      }}>Confirm withdrawal</Button></>}>
       {step === 'form' ? (
         <div className="space-y-5">
           <Field label="Amount (GH₵)">
@@ -173,9 +178,18 @@ function WithdrawModal({ open, onClose, owner, balance, onDone, onAddAccount }) 
         </div>
       ) : (
         <div className="space-y-4 text-center">
-          <p className="text-sm text-slate-600 dark:text-slate-300">Enter the 6-digit code we sent to <b>{owner.phone}</b> to confirm sending <b>{money(amt)}</b> to <b>{acc?.kind === 'bank' ? acc.bank : acc?.number}</b>.</p>
-          <Input autoFocus inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} className="mx-auto max-w-[220px] text-center text-2xl font-bold tracking-[.5em]" placeholder="••••••" />
-          <p className="text-xs text-slate-400">Demo code: 123456</p>
+          {LIVE ? (
+            <>
+              <p className="text-sm text-slate-600 dark:text-slate-300">For your safety, enter your password to send <b>{money(amt)}</b> to <b>{acc?.kind === 'bank' ? acc.bank : acc?.number}</b>.</p>
+              <Input autoFocus type="password" value={otp} onChange={(e) => setOtp(e.target.value)} className="mx-auto max-w-xs text-center" placeholder="Your password" />
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Enter the 6-digit code we sent to <b>{owner.phone}</b> to confirm sending <b>{money(amt)}</b> to <b>{acc?.kind === 'bank' ? acc.bank : acc?.number}</b>.</p>
+              <Input autoFocus inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} className="mx-auto max-w-[220px] text-center text-2xl font-bold tracking-[.5em]" placeholder="••••••" />
+              <p className="text-xs text-slate-400">Demo code: 123456</p>
+            </>
+          )}
         </div>
       )}
     </Modal>

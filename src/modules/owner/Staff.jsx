@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { UserPlus, Pencil, Trash2, Building2, Check, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { LIVE, SITE } from '../../config';
+import { UserPlus, Pencil, Trash2, Building2, Check, X, Send } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { useMe, useData } from '../../lib/session';
 import { PageHeader, Button, Card, Avatar, Badge, Modal, Field, Input, Select, toast, confirmDialog, EmptyState, cx } from '../../components/ui';
@@ -12,18 +13,37 @@ export default function Staff() {
   const s = useStore();
   const { properties, P } = useData();
   const staff = s.users.filter((u) => u.ownerId === owner.id && u.role === 'manager');
+  const allInvites = useStore((st) => st.invites);
+  const invites = useMemo(() => allInvites.filter((i) => i.ownerId === owner.id && !i.accepted), [allInvites, owner.id]);
+  const inviteText = (f) => `Hello ${f.name.split(' ')[0]}, ${owner.company} has added you as ${f.title} on Efie Wura Pro. Open ${SITE} → Create account → Staff, use company code ${owner.code} and this phone number.`;
   const [form, setForm] = useState(null);
   const save = () => {
     if (!form.name || !form.phone) return toast.error('Name and phone are needed');
     if (!form.propertyIds?.length) return toast.error('Give them at least one property');
     if (form.id) s.update('users', form.id, form);
-    else { s.add('users', { ...form, role: 'manager', ownerId: owner.id }); toast.success('Invite sent', `${form.name} gets an SMS with a link to sign in`); }
+    else if (LIVE) {
+      s.add('invites', { ...form, ownerId: owner.id });
+      s.sendSms(owner.id, [{ phone: form.phone, name: form.name }], inviteText(form), 'invite');
+      toast.success('Invite sent by SMS', `${form.name} signs up with code ${owner.code} and this phone number`);
+    } else { s.add('users', { ...form, role: 'manager', ownerId: owner.id }); toast.success('Invite sent', `${form.name} gets an SMS with a link to sign in`); }
     return setForm(null);
   };
   const toggle = (k, v) => setForm((f) => ({ ...f, [k]: f[k]?.includes(v) ? f[k].filter((x) => x !== v) : [...(f[k] || []), v] }));
   return (
     <div>
       <PageHeader title="Staff" subtitle="Managers and caretakers see only the properties you give them — never your wallet" actions={<Button icon={UserPlus} onClick={() => setForm({ title: 'Property Manager', propertyIds: [], perms: { payments: true, tenants: true, maintenance: true, expenses: false, reports: false } })}>Invite staff</Button>} />
+      {invites.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {invites.map((i) => (
+            <Card key={i.id} className="flex flex-wrap items-center gap-3 p-4">
+              <Avatar name={i.name} size="sm" />
+              <div className="min-w-0 flex-1"><p className="font-semibold">{i.name} <Badge tone="amber">Invited</Badge></p><p className="text-xs text-slate-500">{i.title} · {i.phone} · joins with code <b className="font-mono">{owner.code}</b></p></div>
+              <Button size="sm" variant="ghost" icon={Send} onClick={() => { s.sendSms(owner.id, [{ phone: i.phone, name: i.name }], inviteText(i), 'invite'); toast.success('Invite sent again'); }}>Resend</Button>
+              <Button size="sm" variant="ghost" icon={Trash2} onClick={() => s.remove('invites', i.id)} />
+            </Card>
+          ))}
+        </div>
+      )}
       {staff.length ? (
         <div className="grid gap-4 md:grid-cols-2">
           {staff.map((u) => (
@@ -44,7 +64,7 @@ export default function Staff() {
             </Card>
           ))}
         </div>
-      ) : <Card><EmptyState title="No staff yet" text="Invite a manager or caretaker to help collect rent and handle repairs." /></Card>}
+      ) : !invites.length && <Card><EmptyState title="No staff yet" text="Invite a manager or caretaker to help collect rent and handle repairs." /></Card>}
       <Modal open={!!form} onClose={() => setForm(null)} title={form?.id ? 'Edit staff member' : 'Invite staff'} size="lg" footer={<><Button variant="secondary" onClick={() => setForm(null)}>Cancel</Button><Button onClick={save}>{form?.id ? 'Save' : 'Send invite'}</Button></>}>
         {form && (
           <div className="space-y-5">

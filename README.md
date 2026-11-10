@@ -2,7 +2,7 @@
 
 Rental management for Ghana: properties, units, tenants, tenancy agreements with e-signature, rent and bills paid by MoMo or card, an owner wallet with withdrawals to MoMo or bank, repairs, expenses, SMS and reports. Every owner's company gets its own logo, colours and fonts.
 
-**Live demo:** https://nyamebabaku-lab.github.io/efiewura/
+**Live app:** https://nyamebabaku-lab.github.io/efiewura/ · **Demo:** https://nyamebabaku-lab.github.io/efiewura/demo/ · Setup: [docs/live-setup.md](docs/live-setup.md)
 
 ## Demo roles
 | Role | Who | What to try |
@@ -18,7 +18,8 @@ Phase 1 runs entirely in the browser (data in localStorage, simulated payments a
 ## Develop
 ```bash
 npm install
-npm run dev
+npm run dev        # live app (needs .env.local with VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)
+npm run dev:demo   # demo with sample data
 ```
 
 ## Stack

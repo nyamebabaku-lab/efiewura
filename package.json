@@ -4,15 +4,20 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "VITE_APP=live vite",
+    "dev:demo": "VITE_APP=demo vite",
+    "build": "npm run build:live && npm run build:demo",
+    "build:live": "VITE_APP=live vite build",
+    "build:demo": "VITE_APP=demo vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sql": "node scripts/sql.mjs"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.1.0",
     "@fontsource/plus-jakarta-sans": "^5.1.0",
     "@fontsource/sora": "^5.1.0",
+    "@supabase/supabase-js": "^2.119.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.468.0",
     "react": "^19.1.0",
