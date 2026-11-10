@@ -6,6 +6,7 @@ import { useMe } from '../../lib/session';
 import { navFor } from '../../lib/nav';
 import { cx, Avatar, Modal } from '../ui';
 import { CompanyLogo, EfieLogo, EfieMark } from './Logo';
+import { LIVE } from '../../config';
 import { fmtDateTime, money } from '../../lib/format';
 
 function SideNav({ nav, onNavigate, styleKind }) {
@@ -173,7 +174,7 @@ export default function AppShell({ children }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {testMode && (
           <div className="no-print flex items-center justify-center gap-2 bg-accent-400 px-3 py-1 text-center text-[11px] font-semibold text-brand-950">
-            <Sparkles className="h-3 w-3" /> Demo mode<span className="hidden sm:inline"> — payments and SMS are simulated. No real money moves.</span><span className="sm:hidden"> · no real money moves</span>
+            <Sparkles className="h-3 w-3" /> {LIVE ? 'Test mode' : 'Demo mode'}<span className="hidden sm:inline"> — payments{LIVE ? '' : ' and SMS'} are simulated. No real money moves.</span><span className="sm:hidden"> · no real money moves</span>
           </div>
         )}
         <header className="no-print glass sticky top-0 z-30 border-b border-ivory-200/80 pt-safe dark:border-white/5">
