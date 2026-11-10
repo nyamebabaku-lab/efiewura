@@ -18,7 +18,7 @@ export const propertyFields = [
   { name: 'address', label: 'Street address', span: 2 },
   { name: 'gps', label: 'Ghana Post GPS', placeholder: 'GA-123-4567' },
   { name: 'amenitiesText', label: 'Amenities', placeholder: 'Comma separated: Borehole, Security, Parking' },
-  { name: 'photo', label: 'Cover photo', type: 'custom', span: 2, render: (v, set) => (
+  { name: 'photo', label: 'Cover photo', type: 'custom', span: 2, render: ({ photo: v }, set) => (
     <div className="flex items-center gap-3">
       <div className="h-16 w-28 overflow-hidden rounded-xl bg-ivory-200">{v && <img src={v} alt="" className="h-full w-full object-cover" />}</div>
       <label className="cursor-pointer rounded-xl bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-200">
