@@ -3,14 +3,18 @@ import { useEffect, useState } from 'react';
 import { Building2, KeyRound, UserCog, ArrowLeft, Loader2, Crown, LogOut, Eye, EyeOff } from 'lucide-react';
 import { Modal, Button, Field, Input, Segmented, toast, cx } from '../../components/ui';
 import { EfieLogo } from '../../components/layout/Logo';
-import { signIn, registerOwner, joinCompany, claimAdmin, signOut, resetPassword, useLive } from '../../data/live';
+import { signIn, registerOwner, joinCompany, claimAdmin, registerAdmin, signOut, resetPassword, useLive } from '../../data/live';
 import { friendly } from '../../lib/supabase';
+import { APP_ROLE } from '../../config';
 
-const ROLES = [
+const ALL_ROLES = [
   { id: 'owner', icon: Building2, title: 'Property owner', text: 'Register your company and manage your properties' },
   { id: 'tenant', icon: KeyRound, title: 'Tenant', text: 'Pay rent and get receipts — use the code from your landlord' },
   { id: 'staff', icon: UserCog, title: 'Staff', text: 'Manager or caretaker invited by an owner' },
+  { id: 'admin', icon: Crown, title: 'Efie Wura Super Admin', text: 'First set-up only — reserved email' },
 ];
+// Each Android app only signs up its own people; the website offers all three.
+const ROLES = ALL_ROLES.filter((r) => (APP_ROLE === 'admin' ? r.id === 'admin' : r.id !== 'admin' && (!APP_ROLE || (APP_ROLE === 'tenant' ? r.id === 'tenant' : r.id !== 'tenant'))));
 
 function Password({ value, onChange, label = 'Password', hint }) {
   const [show, setShow] = useState(false);
@@ -26,6 +30,14 @@ function Password({ value, onChange, label = 'Password', hint }) {
 
 /** Role form for sign-up (or for finishing an account that exists without a company). */
 function RoleForm({ role, v, set, withAccount }) {
+  if (role === 'admin')
+    return (
+      <div className="grid gap-4">
+        <Field label="Your name"><Input value={v.name || ''} onChange={(e) => set({ name: e.target.value })} placeholder="Efie Wura HQ" /></Field>
+        <Field label="Email *" hint="Only the reserved Super Admin email is accepted"><Input type="email" value={v.email || ''} onChange={(e) => set({ email: e.target.value })} /></Field>
+        <Password value={v.password || ''} onChange={(x) => set({ password: x })} hint="At least 8 characters" />
+      </div>
+    );
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="Full name *"><Input value={v.name || ''} onChange={(e) => set({ name: e.target.value })} /></Field>
@@ -46,6 +58,7 @@ function RoleForm({ role, v, set, withAccount }) {
 }
 
 const check = (role, v, withAccount) => {
+  if (role === 'admin') return !v.email?.includes('@') ? 'Enter the reserved email' : (v.password || '').length < 8 ? 'Use a password of at least 8 characters' : '';
   if (!v.name?.trim()) return 'Enter your name';
   if (!/^0\d{9}$/.test((v.phone || '').replace(/\s|\+233/g, '').replace(/^233/, '0'))) return 'Enter a 10-digit phone number, e.g. 0241234567';
   if (withAccount && (v.password || '').length < 8) return 'Use a password of at least 8 characters';
@@ -61,7 +74,7 @@ export function AuthModal({ open, onClose, start = 'signin' }) {
   const [v, setV] = useState({});
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
-  useEffect(() => { if (open) { setTab(start); setRole(null); setV({}); setForgot(false); } }, [open, start]);
+  useEffect(() => { if (open) { setTab(ROLES.length ? start : 'signin'); setRole(ROLES.length === 1 ? ROLES[0].id : null); setV({}); setForgot(false); } }, [open, start]);
   const set = (p) => setV((x) => ({ ...x, ...p }));
 
   const doSignIn = async () => {
@@ -75,9 +88,10 @@ export function AuthModal({ open, onClose, start = 'signin' }) {
     const err = check(role, v, true);
     if (err) return toast.error(err);
     setBusy(true);
-    const f = { ...v, phone: normPhone(v.phone) };
+    const f = { ...v, phone: v.phone ? normPhone(v.phone) : '' };
     try {
-      if (role === 'owner') { await registerOwner(f); toast.success('Account created', 'Now let’s set up your brand'); }
+      if (role === 'admin') { await registerAdmin({ ...v, name: v.name || 'Efie Wura HQ' }); toast.success('Super Admin ready'); }
+      else if (role === 'owner') { await registerOwner(f); toast.success('Account created', 'Now let’s set up your brand'); }
       else { const r = await joinCompany(f); toast.success(r === 'manager' ? 'Welcome to the team' : 'Welcome home', 'Your account is ready'); }
       onClose();
     } catch (e) { toast.error('Could not create your account', friendly(e)); }
@@ -95,7 +109,7 @@ export function AuthModal({ open, onClose, start = 'signin' }) {
       footer={tab === 'signin' ? (
         forgot ? <Button className="w-full" onClick={doReset}>Send reset link</Button> : <Button className="w-full" disabled={busy} onClick={doSignIn}>{busy && <Loader2 className="h-4 w-4 animate-spin" />}Sign in</Button>
       ) : role && <><Button variant="secondary" icon={ArrowLeft} onClick={() => setRole(null)}>Back</Button><Button disabled={busy} onClick={doSignUp}>{busy && <Loader2 className="h-4 w-4 animate-spin" />}Create account</Button></>}>
-      <Segmented className="mb-5 w-full [&>button]:flex-1" value={tab} onChange={(t) => { setTab(t); setRole(null); }} options={[{ value: 'signin', label: 'Sign in' }, { value: 'signup', label: 'Create account' }]} />
+      {ROLES.length > 0 && <Segmented className="mb-5 w-full [&>button]:flex-1" value={tab} onChange={(t) => { setTab(t); setRole(null); }} options={[{ value: 'signin', label: 'Sign in' }, { value: 'signup', label: 'Create account' }]} />}
       {tab === 'signin' ? (
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); forgot ? doReset() : doSignIn(); }}>
           <Field label="Phone number or email"><Input autoFocus value={v.id || ''} onChange={(e) => set({ id: e.target.value })} placeholder="0241234567 or you@email.com" autoComplete="username" /></Field>

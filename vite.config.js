@@ -5,13 +5,16 @@ import { VitePWA } from 'vite-plugin-pwa';
 // Two apps from one codebase (VITE_APP): live → dist/, demo → dist/demo/.
 const APP = process.env.VITE_APP || 'demo';
 const LIVE = APP === 'live';
+// Android builds (VITE_ROLE = tenant | owner | admin): no service worker, the app ships its own files.
+const ROLE = process.env.VITE_ROLE || '';
 
 export default defineConfig({
   base: './',
-  define: { 'import.meta.env.VITE_APP': JSON.stringify(APP) },
+  define: { 'import.meta.env.VITE_APP': JSON.stringify(APP), 'import.meta.env.VITE_ROLE': JSON.stringify(ROLE) },
   plugins: [
     react(),
     VitePWA({
+      disable: !!ROLE,
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
@@ -42,5 +45,5 @@ export default defineConfig({
       },
     }),
   ],
-  build: { outDir: LIVE ? 'dist' : process.env.OUT_DIR || 'dist/demo', emptyOutDir: LIVE || !!process.env.OUT_DIR, chunkSizeWarningLimit: 1500 },
+  build: { outDir: process.env.OUT_DIR || (LIVE ? 'dist' : 'dist/demo'), emptyOutDir: LIVE || !!process.env.OUT_DIR, chunkSizeWarningLimit: 1500 },
 });

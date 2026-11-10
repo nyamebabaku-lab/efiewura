@@ -6,7 +6,7 @@ import { Button, cx } from '../../components/ui';
 import PayLogo from '../../components/PayLogo';
 import Register from './Register';
 import { AuthModal } from './LiveAuth';
-import { LIVE, DEMO_SITE } from '../../config';
+import { LIVE, DEMO_SITE, APKS } from '../../config';
 import { useInstall } from '../../lib/install';
 
 const DEMOS = [
@@ -89,6 +89,19 @@ export default function Landing() {
               <button type="button" onClick={() => setAuth('signup')} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#0f604a] dark:text-emerald-300">{cta} <ArrowRight className="h-4 w-4" /></button>
             </div>
           ))}
+        </div>
+        <div className="mt-8 rounded-[var(--radius)] bg-[#072e25] p-6 text-white">
+          <p className="flex items-center gap-2 font-bold"><Download className="h-5 w-5 text-[#ecc552]" /> Get the Android apps</p>
+          <p className="mt-1 text-sm text-white/70">On iPhone, open this website in Safari → Share → Add to Home Screen.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {Object.values(APKS).map((a) => (
+              <a key={a.name} href={a.url} className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 transition hover:bg-white/15">
+                <p className="font-bold">{a.name}</p>
+                <p className="text-xs text-white/60">{a.who}</p>
+                <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#ecc552]"><Download className="h-3.5 w-3.5" /> Download APK</p>
+              </a>
+            ))}
+          </div>
         </div>
         <p className="mt-6 text-sm text-slate-500">Just looking? <a href={DEMO_SITE} className="font-semibold text-[#0f604a] underline dark:text-emerald-300">Try the demo with sample data</a>.</p>
       </section>

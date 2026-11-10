@@ -131,8 +131,11 @@ async function signUpOrIn(f) {
     if (/already registered/i.test(error.message)) return must(supabase.auth.signInWithPassword({ email, password: f.password }));
     throw new Error(friendly(error));
   }
-  if (!data.session) throw new Error('Check your email to confirm your account, then sign in.');
-  return data;
+  if (data.session) return data;
+  // The email may already have a login on this Supabase project (e.g. from another app): use that password.
+  const r = await supabase.auth.signInWithPassword({ email, password: f.password });
+  if (r.error) throw new Error('This email already has an account — use its existing password.');
+  return r.data;
 }
 
 /** New owner: account + company (pending until Efie Wura approves). */
@@ -152,6 +155,13 @@ export const joinCompany = (f) => hold(async () => {
   const role = await must(supabase.rpc('join_company', { p_code: f.code, p_name: f.name || '', p_phone: f.phone, p_email: f.email || '' }));
   await load();
   return role;
+});
+
+/** Admin app: the reserved email creates its account and claims Super Admin. */
+export const registerAdmin = (f) => hold(async () => {
+  if (!(await supabase.auth.getSession()).data.session) await signUpOrIn({ ...f, phone: '' });
+  await must(supabase.rpc('claim_admin', { p_name: f.name }));
+  await load();
 });
 
 export const claimAdmin = async (name) => { await must(supabase.rpc('claim_admin', { p_name: name })); await load(); };

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Efie Wura Admin</string>
+    <string name="title_activity_main">Efie Wura Admin</string>
+    <string name="package_name">com.efiewura.admin</string>
+    <string name="custom_url_scheme">com.efiewura.admin</string>
+</resources>

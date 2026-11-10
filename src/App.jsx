@@ -8,7 +8,8 @@ import { Toaster, Button } from './components/ui';
 import AppShell from './components/layout/AppShell';
 import Landing from './modules/public/Landing';
 import SetupWizard from './modules/shared/SetupWizard';
-import { LIVE } from './config';
+import { LIVE, APP_ROLE, appForRole } from './config';
+import { AppStart, WrongApp } from './modules/public/AppGate';
 import { useLive, startLive } from './data/live';
 import { FinishSetup } from './modules/public/LiveAuth';
 import { EfieMark } from './components/layout/Logo';
@@ -116,7 +117,8 @@ export default function App() {
   let body;
   if (LIVE && phase === 'loading') body = <div className="flex min-h-screen flex-col items-center justify-center gap-4"><EfieMark className="h-14 w-14 animate-pulse-soft" /><Loader2 className="h-5 w-5 animate-spin text-brand-600" /></div>;
   else if (LIVE && phase === 'noProfile') body = <FinishSetup />;
-  else if (!user) body = <Landing />;
+  else if (!user) body = APP_ROLE ? <AppStart /> : <Landing />;
+  else if (APP_ROLE && appForRole(user.role) !== APP_ROLE) body = <WrongApp role={user.role} />;
   else if (user.role === 'owner' && !owner.setupDone) body = <SetupWizard />;
   else if (owner?.status === 'suspended') body = <Suspended owner={owner} />;
   else
