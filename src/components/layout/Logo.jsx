@@ -33,7 +33,7 @@ export function EfieLogo({ className, light }) {
 /** An owner's company logo (or initials fallback) and name. */
 export function CompanyLogo({ owner, className, size = 'md' }) {
   const sz = { sm: 'h-8 w-8 text-xs', md: 'h-10 w-10 text-sm', lg: 'h-16 w-16 text-xl', xl: 'h-24 w-24 text-3xl' }[size];
-  if (owner?.logo) return <img src={owner.logo} alt={owner.company} className={cx('shrink-0 object-contain', sz, className)} />;
+  if (owner?.logo) return <img src={owner.logo} alt={owner.company} className={cx('shrink-0 rounded-xl bg-white object-contain', sz, className)} />;
   const ini = (owner?.company || owner?.contactName || 'EW').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   return <div className={cx('flex shrink-0 items-center justify-center rounded-xl bg-brand-600 font-bold text-white', sz, className)}>{ini}</div>;
 }
