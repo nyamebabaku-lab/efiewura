@@ -1,12 +1,24 @@
 // Drawn building illustrations used as property covers (no stock photos).
+import { useState } from 'react';
 import { cx } from './ui';
 
 const SKIES = [
   ['#dbeafe', '#fef3c7'], ['#fde68a', '#fecaca'], ['#d1fae5', '#e0f2fe'], ['#ede9fe', '#fce7f3'], ['#fee2e2', '#fef9c3'], ['#cffafe', '#f5f5f4'],
 ];
 
-export default function PropertyArt({ property, className, photo }) {
-  if (photo || property?.photo) return <img src={photo || property.photo} alt={property?.name} className={cx('h-full w-full object-cover', className)} />;
+// Real photos used when an owner hasn't uploaded one (public/photos, see docs/photo-credits.md).
+const STOCK = { Apartments: 'apartments', 'Compound house': 'compound', Townhouses: 'townhouses', Houses: 'houses', Commercial: 'commercial', Hostel: 'hostel', 'Mixed use': 'mixed' };
+export const stockPhoto = (type) => `${import.meta.env.BASE_URL}photos/${STOCK[type] || 'apartments'}.jpg`;
+export const heroPhoto = () => `${import.meta.env.BASE_URL}photos/hero.jpg`;
+
+export default function PropertyArt(props) {
+  const [failed, setFailed] = useState(false);
+  const src = props.photo || props.property?.photo || stockPhoto(props.property?.type);
+  if (!failed) return <img src={src} alt={props.property?.name || ''} loading="lazy" onError={() => setFailed(true)} className={cx('h-full w-full object-cover', props.className)} />;
+  return <Drawn {...props} />;
+}
+
+function Drawn({ property, className }) {
   const [a, b] = SKIES[(property?.hue ?? 0) % SKIES.length];
   const type = property?.type || 'Apartments';
   return (

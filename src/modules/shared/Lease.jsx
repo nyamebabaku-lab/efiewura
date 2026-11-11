@@ -1,6 +1,6 @@
 // New tenancy form, signature pad and the printable tenancy agreement.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Printer, PenLine, Eraser } from 'lucide-react';
+import { FileDown, PenLine, Eraser } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { useMe, useData } from '../../lib/session';
 import { Modal, Button, Field, Input, Select, Segmented, toast, printElement, Textarea } from '../../components/ui';
@@ -140,7 +140,7 @@ export function LeaseDocument({ lease: given, onClose, signAs }) {
   );
   return (
     <Modal open onClose={onClose} title="Tenancy agreement" subtitle={lease.no} size="lg"
-      footer={<>{signAs && !mine && <Button icon={PenLine} onClick={() => setSigning(true)}>Sign now</Button>}<Button variant="secondary" icon={Printer} onClick={() => printElement('lease-doc', `Tenancy ${lease.no}`)}>Print / PDF</Button></>}>
+      footer={<>{signAs && !mine && <Button icon={PenLine} onClick={() => setSigning(true)}>Sign now</Button>}<Button variant="secondary" icon={FileDown} onClick={() => printElement('lease-doc', `Tenancy ${lease.no}`)}>PDF</Button></>}>
       <div id="lease-doc" className="text-[13px] leading-relaxed text-slate-800">
         <div className="mb-4 flex items-center gap-3 border-b-2 border-brand-600 pb-3">
           <CompanyLogo owner={owner} size="md" />

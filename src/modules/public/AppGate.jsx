@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Download, LogOut, KeyRound, Building2, Crown } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { EfieMark } from '../../components/layout/Logo';
+import { heroPhoto } from '../../components/PropertyArt';
 import { AuthModal } from './LiveAuth';
 import { APP_ROLE, APKS, APP_NAME, SITE, appForRole } from '../../config';
 import { signOut } from '../../data/live';
@@ -15,7 +16,8 @@ export function AppStart() {
   const Icon = ICON[APP_ROLE];
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#072e25] px-6 pb-10 pt-safe text-white">
-      <div className="kente-soft absolute inset-0 opacity-60" />
+      <img src={heroPhoto()} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#072e25]/70 via-[#072e25]/55 to-[#072e25]" />
       <div className="relative flex flex-1 flex-col items-center justify-center text-center">
         <EfieMark className="h-24 w-24 drop-shadow-2xl" />
         <h1 className="mt-6 text-4xl font-semibold" style={{ fontFamily: 'Fraunces, serif' }}>{APP_NAME}</h1>

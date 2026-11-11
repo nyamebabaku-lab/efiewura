@@ -4,6 +4,7 @@ import { useStore } from '../../data/store';
 import { EfieLogo } from '../../components/layout/Logo';
 import { Button, cx } from '../../components/ui';
 import PayLogo from '../../components/PayLogo';
+import { heroPhoto } from '../../components/PropertyArt';
 import Register from './Register';
 import { AuthModal } from './LiveAuth';
 import { LIVE, DEMO_SITE, APKS } from '../../config';
@@ -37,7 +38,10 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-ivory-100 dark:bg-navy-950">
       <section className="relative overflow-hidden bg-[#072e25] text-white">
-        <div className="hero-glow absolute inset-0" style={{ '--accent-400': '226 178 50', '--brand-400': '58 151 121' }} />
+        <img src={heroPhoto()} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#072e25] via-[#072e25]/90 to-[#072e25]/45" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#072e25] via-transparent to-[#072e25]/60" />
+        <div className="hero-glow absolute inset-0 opacity-70" style={{ '--accent-400': '226 178 50', '--brand-400': '58 151 121' }} />
         <div className="kente-soft absolute inset-0 opacity-60" />
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-6 sm:px-8 sm:pb-24">
           <div className="flex items-center justify-between gap-3">

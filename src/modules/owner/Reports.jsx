@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell } from 'recharts';
-import { Download, Printer, TrendingUp, PiggyBank, Scale, Percent } from 'lucide-react';
+import { Download, FileDown, TrendingUp, PiggyBank, Scale, Percent } from 'lucide-react';
 import { addMonths, format, startOfMonth } from 'date-fns';
 import { useMe, useData, useScoped } from '../../lib/session';
 import { PageHeader, Button, Card, CardHeader, Segmented, StatCard, printElement } from '../../components/ui';
@@ -44,9 +44,9 @@ export default function Reports() {
   return (
     <div>
       <PageHeader title="Reports" subtitle={`${fmtDate(from)} – ${fmtDate(new Date())}`}
-        actions={<><Segmented value={months} onChange={setMonths} options={[{ value: 1, label: '1M' }, { value: 3, label: '3M' }, { value: 6, label: '6M' }, { value: 12, label: '12M' }]} /><Button variant="secondary" icon={Download} onClick={() => downloadCSV('property-report', perProperty.map((x) => ({ Property: x.name, Units: x.units, 'Occupancy %': x.occ, Income: x.income, Expenses: x.cost, 'Platform fees': x.fees, Net: x.net, Arrears: x.arrears })))}>Excel</Button><Button variant="secondary" icon={Printer} onClick={() => printElement('report', 'Report')}>PDF</Button></>} />
+        actions={<><Segmented value={months} onChange={setMonths} options={[{ value: 1, label: '1M' }, { value: 3, label: '3M' }, { value: 6, label: '6M' }, { value: 12, label: '12M' }]} /><Button variant="secondary" icon={Download} onClick={() => downloadCSV('property-report', perProperty.map((x) => ({ Property: x.name, Units: x.units, 'Occupancy %': x.occ, Income: x.income, Expenses: x.cost, 'Platform fees': x.fees, Net: x.net, Arrears: x.arrears })))}>Excel</Button><Button variant="secondary" icon={FileDown} onClick={() => printElement('report', `${owner.company} report`)}>PDF</Button></>} />
       <div id="report" className="space-y-6">
-        <div className="hidden items-center gap-3 print:flex"><CompanyLogo owner={owner} /><div><p className="font-display text-xl font-semibold">{owner.company} — Income report</p><p className="text-xs">{fmtDate(from)} – {fmtDate(new Date())}</p></div></div>
+        <div data-pdf className="hidden items-center gap-3 print:flex"><CompanyLogo owner={owner} /><div><p className="font-display text-xl font-semibold">{owner.company} — Income report</p><p className="text-xs">{fmtDate(from)} – {fmtDate(new Date())}</p></div></div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard label="Income" value={money(income)} icon={TrendingUp} tone="green" />
           <StatCard label="Expenses + fees" value={money(cost + fees)} icon={PiggyBank} tone="rose" />

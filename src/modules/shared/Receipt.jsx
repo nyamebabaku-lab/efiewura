@@ -1,4 +1,4 @@
-import { Printer, Share2 } from 'lucide-react';
+import { FileDown, Share2 } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { Modal, Button, printElement } from '../../components/ui';
 import { CompanyLogo, EfieMark } from '../../components/layout/Logo';
@@ -19,7 +19,7 @@ export default function ReceiptModal({ payment, onClose }) {
   };
   return (
     <Modal open onClose={onClose} title="Payment receipt" size="md"
-      footer={<><Button variant="secondary" icon={Share2} onClick={share}>Share</Button><Button icon={Printer} onClick={() => printElement('receipt', `Receipt ${payment.ref}`)}>Print / PDF</Button></>}>
+      footer={<><Button variant="secondary" icon={Share2} onClick={share}>Share text</Button><Button icon={FileDown} onClick={() => printElement('receipt', `Receipt ${payment.ref}`)}>Download / share PDF</Button></>}>
       <div id="receipt" className="text-slate-800">
         <div className="overflow-hidden rounded-2xl border border-ivory-200 bg-white">
           <div className="flex items-center gap-3 bg-brand-700 p-4 text-white" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}>

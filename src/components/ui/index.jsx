@@ -584,18 +584,16 @@ export function Stepper({ value, onChange, step = 1, min = 0, className }) {
   );
 }
 
-/** Prints one element in a clean window (receipts, payslips, statements). */
-export function printElement(id, title = 'Efie Wura Pro') {
+/** Turns one element (receipt, agreement, report) into a PDF: share sheet on phones / in the apps, download on computers. */
+export async function printElement(id, title = 'Efie Wura Pro') {
   const el = document.getElementById(id);
   if (!el) return;
-  const css = [...document.querySelectorAll('link[rel="stylesheet"], style')].map((n) => n.outerHTML).join('');
-  const w = window.open('', '_blank');
-  if (!w) return window.print();
-  w.document.write(`<!doctype html><html style="${document.documentElement.getAttribute('style') || ''}"><head><base href="${location.href.split('#')[0]}"><meta charset="utf-8"><title>${title}</title>${css}</head><body style="background:#fff;padding:32px;max-width:820px;margin:auto">${el.innerHTML}</body></html>`);
-  w.document.close();
-  setTimeout(() => {
-    w.focus();
-    w.print();
-  }, 500);
-  return null;
+  toast.info('Preparing PDF…');
+  try {
+    const { elementToPdf, sharePdf } = await import('../../lib/pdf');
+    const r = await sharePdf(await elementToPdf(el), title);
+    if (r === 'downloaded') toast.success('PDF downloaded', `${title}.pdf`);
+  } catch (e) {
+    toast.error('Could not make the PDF', e?.message || 'Please try again');
+  }
 }
